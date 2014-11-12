@@ -21,7 +21,7 @@ from nova.scheduler import filters
 opts = [
     cfg.BoolOpt('cloud_burst',
                 help='Switch to enable could bursting'),
-    cfg.StrOpt('cloud_burst_availablity_zone',
+    cfg.StrOpt('cloud_burst_availability_zone',
                 help='The availability zone of only compute hosts with the public cloud driver'),
 ]
 CONF = cfg.CONF
@@ -39,7 +39,7 @@ class CloudBurstFilter(filters.BaseHostFilter):
         props = spec.get('instance_properties', {})
         availability_zone = props.get('availability_zone')
 
-        LOG.info("cloud burst options = %s, %s" % (CONF.cloud_burst, CONF.cloud_burst_availablity_zone))
+        LOG.info("cloud burst options = %s, %s" % (CONF.cloud_burst, CONF.cloud_burst_availability_zone))
         LOG.info("avaiablity zone = %s" % availability_zone)
         LOG.info("host_state.host = %s, %s" % (type(host_state.host), host_state.host))
 
@@ -48,5 +48,11 @@ class CloudBurstFilter(filters.BaseHostFilter):
         LOG.info("metadata = %s, %s" % (metadata, metadata['availability_zone']))
 
         if CONF.cloud_burst:
-            return (availability_zone == None or availability_zone == CONF.cloud_burst_availablity_zone) and host_zone == CONF.cloud_burst_availablity_zone
+            if availability_zone == None or availability_zone == CONF.cloud_burst_availability_zone:
+                return CONF.cloud_burst_availability_zone in metadata['availability_zone']
+            else:
+                return False
+        else:
+            return CONF.cloud_burst_availability_zone not in metadata['availability_zone']
+
         return True
