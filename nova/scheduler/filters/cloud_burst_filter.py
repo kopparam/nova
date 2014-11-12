@@ -15,9 +15,10 @@
 
 from oslo.config import cfg
 
+from nova import db
 from nova.openstack.common import log as logging
 from nova.scheduler import filters
-
+az = {'compute':'ec2', 'controller':'ctrl'}
 opts = [
     cfg.BoolOpt('cloud_burst',
                 help='Switch to enable could bursting'),
@@ -44,10 +45,13 @@ class CloudBurstFilter(filters.BaseHostFilter):
 
         LOG.info("cloud burst options = %s, %s" % (CONF.cloud_burst, CONF.cloud_burst_availablity_zone))
         LOG.info("avaiablity zone = %s" % availability_zone)
+        LOG.info("host_state.host = %s, %s" % (type(host_state.host), host_state.host))
 
+        context = filter_properties['context'].elevated()
+        metadata = db.aggregate_metadata_get_by_host(context, host_state.host, key='availability_zone')
+        LOG.info("metadata = %s, %s" % (metadata, metadata['availability_zone']))
+
+        host_zone = az[host_state.host]
         if CONF.cloud_burst:
-            if availability_zone == CONF.cloud_burst_availablity_zone or availability_zone == None:
-                return True
-            else:
-                return False
+            return (availability_zone == None or availability_zone == CONF.cloud_burst_availablity_zone) and host_zone == CONF.cloud_burst_availablity_zone
         return True
