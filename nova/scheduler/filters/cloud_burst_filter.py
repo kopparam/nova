@@ -35,23 +35,11 @@ class CloudBurstFilter(filters.BaseHostFilter):
     run_filter_once_per_request = True
 
     def host_passes(self, host_state, filter_properties):
-        spec = filter_properties.get('request_spec', {})
-        props = spec.get('instance_properties', {})
-        availability_zone = props.get('availability_zone')
-
-        LOG.info("cloud burst options = %s, %s" % (CONF.cloud_burst, CONF.cloud_burst_availability_zone))
-        LOG.info("avaiablity zone = %s" % availability_zone)
-        LOG.info("host_state.host = %s, %s" % (type(host_state.host), host_state.host))
-
         context = filter_properties['context'].elevated()
         metadata = db.aggregate_metadata_get_by_host(context, host_state.host, key='availability_zone')
-        LOG.info("metadata = %s, %s" % (metadata, metadata['availability_zone']))
 
         if CONF.cloud_burst:
-            if availability_zone == None or availability_zone == CONF.cloud_burst_availability_zone:
                 return CONF.cloud_burst_availability_zone in metadata['availability_zone']
-            else:
-                return False
         else:
             return CONF.cloud_burst_availability_zone not in metadata['availability_zone']
 
